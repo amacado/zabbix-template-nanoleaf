@@ -1,4 +1,11 @@
 # Zabbix template for Nanoleaf devices
+
+<br />
+<div align="center">
+    <img src="https://raw.githubusercontent.com/amacado/zabbix-template-nanoleaf/main/docs/images/zabbix_logo.png" alt="Zabbix Server" height="60" />
+    <img src="https://raw.githubusercontent.com/amacado/zabbix-template-nanoleaf/main/docs/images/nanoleaf_logo.png" alt="Nanoleaf®" height="60" />
+</div>
+
 ## About
 This template allows to retrieve data from a Nanoleaf device and use it for monitoring in a Zabbix environment.
 
