@@ -1,0 +1,520 @@
+zabbix_export:
+  version: '6.0'
+  date: '2022-05-30T01:16:14Z'
+  groups:
+    -
+      uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    -
+      uuid: 827f5eb45ee94a66895f1b523855d958
+      template: Nanoleaf
+      name: Nanoleaf
+      description: 'Nanoleaf is a company specializing in LED lighting.'
+      groups:
+        -
+          name: Templates
+      items:
+        -
+          uuid: b4f685723dea4fbfade5a4d5ca948f33
+          name: 'Nanoleaf controller info'
+          type: HTTP_AGENT
+          key: controller.info
+          history: '0'
+          trends: '0'
+          value_type: TEXT
+          description: 'Raw (JSON) response of the controller info request. Result will be pre-processed by dependend items to extract the actual item values.'
+          url: 'http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/v1/{$NANOLEAF_TOKEN}/'
+        -
+          uuid: 6022b6c17ca64cdbaf30d0c0a56d3024
+          name: 'Current effect name'
+          type: DEPENDENT
+          key: controller.info.effects.select
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          description: 'Name of the currently selected effect'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.effects.select
+          master_item:
+            key: controller.info
+          triggers:
+            -
+              uuid: b651f5da7fae4a4bbe918c48107dbfe1
+              expression: change(/Nanoleaf/controller.info.effects.select)>0
+              recovery_mode: NONE
+              name: 'Effect has changed'
+              event_name: 'Selected effect has changed to {ITEM.VALUE}'
+              opdata: 'Current selected effect: {ITEM.LASTVALUE}'
+              status: DISABLED
+              priority: INFO
+              description: 'Selected effect for Nanoleaf has changed'
+              type: MULTIPLE
+              manual_close: 'YES'
+        -
+          uuid: 82c101d7f68d45c7b347dd842557f337
+          name: 'Firmware version'
+          type: DEPENDENT
+          key: controller.info.firmware
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          description: 'Firmeware version of the controller'
+          inventory_link: OS
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.firmwareVersion
+          master_item:
+            key: controller.info
+          triggers:
+            -
+              uuid: 872bbe0f1f8a4a9ab38ea2447690bae1
+              expression: change(/Nanoleaf/controller.info.firmware)>0
+              recovery_mode: NONE
+              name: 'Firmware has changed'
+              event_name: 'Firmware version has changed to {ITEM.VALUE}'
+              opdata: 'Current firmware version: {ITEM.LASTVALUE}'
+              priority: INFO
+              description: 'Nanoleaf firmware version has changed.'
+              type: MULTIPLE
+              manual_close: 'YES'
+        -
+          uuid: 19b8e13856bd426e9f69b40b27ad3d92
+          name: 'Hardware version'
+          type: DEPENDENT
+          key: controller.info.hardware
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          description: 'Hardware version of the controller'
+          inventory_link: HARDWARE
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.hardwareVersion
+          master_item:
+            key: controller.info
+          triggers:
+            -
+              uuid: c2165991ba40412b90661aec10c05da8
+              expression: change(/Nanoleaf/controller.info.hardware)>0
+              recovery_mode: NONE
+              name: 'Hardware has changed'
+              event_name: 'Hardware version has changed to {ITEM.VALUE}'
+              opdata: 'Current hardware version: {ITEM.LASTVALUE}'
+              priority: INFO
+              description: 'Nanoleaf hardware version has changed.'
+              type: MULTIPLE
+              manual_close: 'YES'
+        -
+          uuid: eeec2edf6a4b4ad3a07b8f8b5a2fafc5
+          name: Manufacturer
+          type: DEPENDENT
+          key: controller.info.manufacturer
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          description: 'Manufacturer of the Nanoleaf controller'
+          inventory_link: VENDOR
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.manufacturer
+          master_item:
+            key: controller.info
+        -
+          uuid: c7737bd177de48e68854d7576eb83b82
+          name: Model
+          type: DEPENDENT
+          key: controller.info.model
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          description: 'Hardware model of the Nanoleaf controller'
+          inventory_link: MODEL
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.model
+          master_item:
+            key: controller.info
+        -
+          uuid: 5e026eb34441415bb3c658ee4798d9e0
+          name: Name
+          type: DEPENDENT
+          key: controller.info.name
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          description: 'Controller name'
+          inventory_link: NAME
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.name
+          master_item:
+            key: controller.info
+          triggers:
+            -
+              uuid: 3d98a0cedfbf4c8b93e2e3adc00b7d21
+              expression: change(/Nanoleaf/controller.info.name)>0
+              recovery_mode: NONE
+              name: 'Name has changed'
+              event_name: 'Current name: {ITEM.LASTVALUE}'
+              opdata: 'Nanoleaf name has changed to {ITEM.VALUE}'
+              priority: INFO
+              description: 'Nanoleaf controller name has changed.'
+              type: MULTIPLE
+              manual_close: 'YES'
+        -
+          uuid: 4f2e4804ea4b410ba08263bf911001fd
+          name: 'Rhythm active'
+          type: DEPENDENT
+          key: controller.info.rhythm.active
+          delay: '0'
+          trends: '0'
+          value_type: FLOAT
+          description: 'Check if rhythm is active. Will return value ''-1'' if rhythm module is not connected.'
+          valuemap:
+            name: 'Rhythmen: True/False|Rhythem not connected mapping'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.rhythm.rhythmActive
+            -
+              type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '-1'
+          master_item:
+            key: controller.info
+          tags:
+            -
+              tag: component
+              value: 'rhythm module'
+        -
+          uuid: ff0ae1df90ec4e929c23833737e29ddb
+          name: 'Rhythm aux available'
+          type: DEPENDENT
+          key: controller.info.rhythm.auxAvailable
+          delay: '0'
+          trends: '0'
+          value_type: FLOAT
+          description: 'Check if rhythm aux is available. Will return value ''-1'' if rhythm module is not connected.'
+          valuemap:
+            name: 'Rhythmen: True/False|Rhythem not connected mapping'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.rhythm.auxAvailable
+            -
+              type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+              error_handler: CUSTOM_VALUE
+              error_handler_params: '-1'
+          master_item:
+            key: controller.info
+          tags:
+            -
+              tag: component
+              value: 'rhythm module'
+        -
+          uuid: 75ce096642214f38865b793766807b9a
+          name: 'Rhythm connected'
+          type: DEPENDENT
+          key: controller.info.rhythm.connected
+          delay: '0'
+          trends: '0'
+          description: 'Check if rhythm module is connected to the Nanoleaf controller'
+          valuemap:
+            name: 'Rhythmen: True/False|Rhythem not connected mapping'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.rhythm.rhythmConnected
+            -
+              type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: controller.info
+          tags:
+            -
+              tag: component
+              value: 'rhythm module'
+        -
+          uuid: c774a678a0054916b847da216e86b7ea
+          name: 'Rhythm firmware version'
+          type: DEPENDENT
+          key: controller.info.rhythm.firmware
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          description: 'Rhythmen firmware version. Will return value ''-1'' if rhythm module is not connected.'
+          valuemap:
+            name: 'Rhythmen: -1 = Rhythmen not connected mapping'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.rhythm.firmwareVersion
+            -
+              type: JAVASCRIPT
+              parameters:
+                - 'return (!value || value.length === 0 ) ? -1 : value'
+          master_item:
+            key: controller.info
+          tags:
+            -
+              tag: component
+              value: 'rhythm module'
+        -
+          uuid: cfc0bd29025c4fd4b9d1ed7c55390d91
+          name: 'Rhythm hardware version'
+          type: DEPENDENT
+          key: controller.info.rhythm.hardware
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          description: 'Rhythmen hardware version. Will return value ''-1'' if rhythm module is not connected.'
+          valuemap:
+            name: 'Rhythmen: -1 = Rhythmen not connected mapping'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.rhythm.hardwareVersion
+            -
+              type: JAVASCRIPT
+              parameters:
+                - 'return (!value || value.length === 0 ) ? -1 : value'
+          master_item:
+            key: controller.info
+          tags:
+            -
+              tag: component
+              value: 'rhythm module'
+        -
+          uuid: d2d3dfc4d4944a5a91503bbba3552ecf
+          name: 'Rhythm mode'
+          type: DEPENDENT
+          key: controller.info.rhythm.mode
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          description: 'Rhythmen mode. Will return value ''-1'' if rhythm module is not connected.'
+          valuemap:
+            name: 'Rhythmen modes mapping'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.rhythm.rhythmMode
+            -
+              type: JAVASCRIPT
+              parameters:
+                - 'return (!value || value.length === 0 ) ? -1 : value'
+          master_item:
+            key: controller.info
+          tags:
+            -
+              tag: component
+              value: 'rhythm module'
+        -
+          uuid: 63eb82cfad114ec4b15c68730f1b5e3b
+          name: 'Serial number'
+          type: DEPENDENT
+          key: controller.info.serial
+          delay: '0'
+          trends: '0'
+          value_type: CHAR
+          description: 'Serial no. of the controller'
+          inventory_link: SERIALNO_A
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.serialNo
+          master_item:
+            key: controller.info
+        -
+          uuid: 0b5a846848104afcaf8f6db2cf228c60
+          name: 'Maximum brightness'
+          type: DEPENDENT
+          key: controller.info.state.brightness.max
+          delay: '0'
+          trends: '0'
+          description: 'Maximum brightness of the nanoleaf panel'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.state.brightness.max
+          master_item:
+            key: controller.info
+        -
+          uuid: 2b78049ab8d1437e815ba8bcf7543ea8
+          name: 'Minimum brightness'
+          type: DEPENDENT
+          key: controller.info.state.brightness.min
+          delay: '0'
+          trends: '0'
+          description: 'Minimum brightness of the nanoleaf panel'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.state.brightness.min
+          master_item:
+            key: controller.info
+        -
+          uuid: 5172e1214b8d4887abbd00fb0eff07be
+          name: 'Current brightness'
+          type: DEPENDENT
+          key: controller.info.state.brightness.value
+          delay: '0'
+          description: 'Current brightness of the nanoleaf panel'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.state.brightness.value
+          master_item:
+            key: controller.info
+          triggers:
+            -
+              uuid: d773bdf3df8b431f9c39a727e6f95f8b
+              expression: change(/Nanoleaf/controller.info.state.brightness.value)>0
+              recovery_mode: NONE
+              name: 'Brightness has changed'
+              event_name: 'Brightness has changed to {ITEM.VALUE}'
+              opdata: 'Current brightness: {ITEM.LASTVALUE}'
+              status: DISABLED
+              priority: INFO
+              description: 'Selected brightness for Nanoleaf has changed'
+              type: MULTIPLE
+              manual_close: 'YES'
+        -
+          uuid: 2421827f4bb6459e9bc3dd218ef5ae11
+          name: 'On/Off state'
+          type: DEPENDENT
+          key: controller.info.state.on.value
+          delay: '0'
+          trends: '0'
+          description: 'Returns 0 if Nanoleaf reports it''s off and 1 if it reports it''s on'
+          valuemap:
+            name: 'On/Off state mapping'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.state.on.value
+            -
+              type: BOOL_TO_DECIMAL
+              parameters:
+                - ''
+          master_item:
+            key: controller.info
+      httptests:
+        -
+          uuid: 32ee0edd19b64f77a5cab49b92c457dd
+          name: 'Nanoleaf REST API available'
+          steps:
+            -
+              name: 'Nanoleaf REST API: Controller info'
+              url: 'http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/v1/{$NANOLEAF_TOKEN}/'
+              retrieve_mode: BOTH
+      macros:
+        -
+          macro: '{$NANOLEAF_HOST}'
+          value: '{HOST.CONN}'
+          description: 'Hostname/IP of Nanoleaf controller.'
+        -
+          macro: '{$NANOLEAF_PORT}'
+          value: '16021'
+          description: 'Port of Nanoleaf Web API. Default 16021'
+        -
+          macro: '{$NANOLEAF_TOKEN}'
+          type: SECRET_TEXT
+          description: 'Nanoleaf user authorization token.'
+      valuemaps:
+        -
+          uuid: d7a3b38d457441cc96d7e4ef22436198
+          name: 'On/Off state mapping'
+          mappings:
+            -
+              value: '0'
+              newvalue: 'Off'
+            -
+              value: '1'
+              newvalue: 'On'
+        -
+          uuid: e49cff5cf5aa45d3af771e2ebefff93b
+          name: 'Rhythmen: -1 = Rhythmen not connected mapping'
+          mappings:
+            -
+              value: '-1'
+              newvalue: 'Rhythmen not connected'
+        -
+          uuid: 24a3646a53464400afcac595dcfdb283
+          name: 'Rhythmen: True/False|Rhythem not connected mapping'
+          mappings:
+            -
+              value: '-1'
+              newvalue: 'Rhythmen not connected'
+            -
+              value: '0'
+              newvalue: 'False'
+            -
+              value: '1'
+              newvalue: 'True'
+        -
+          uuid: 636fcefe797e4ab1958e9ef768a63b32
+          name: 'Rhythmen modes mapping'
+          mappings:
+            -
+              value: '-1'
+              newvalue: 'Rhythmen not connected'
+            -
+              value: '0'
+              newvalue: Microphone
+            -
+              value: '1'
+              newvalue: 'Aux cable'
+  triggers:
+    -
+      uuid: d6ae43d178be425d917a0604f178f78a
+      expression: 'last(/Nanoleaf/web.test.fail[Nanoleaf REST API available])<>0'
+      recovery_mode: RECOVERY_EXPRESSION
+      recovery_expression: 'last(/Nanoleaf/web.test.fail[Nanoleaf REST API available])=0'
+      name: 'Nanoleaf REST API is unavailable'
+      opdata: 'Nanoleaf HTTP REST API at http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/[..] is not available'
+      url: 'http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/v1/{$NANOLEAF_TOKEN}/'
+      priority: HIGH
+      description: 'Please check the NANOLEAF_HOST, NANOLEAF_PORT and NANOLEAF_TOKEN macros and create a new authorization token if necessary.'
+      manual_close: 'YES'
+    -
+      uuid: 61a56e227f1c44098128b16a911cd795
+      expression: 'last(/Nanoleaf/web.test.rspcode[Nanoleaf REST API available,Nanoleaf REST API: Controller info])=401'
+      recovery_mode: RECOVERY_EXPRESSION
+      recovery_expression: 'last(/Nanoleaf/web.test.rspcode[Nanoleaf REST API available,Nanoleaf REST API: Controller info])=200'
+      name: 'Nanoleaf REST API reports unauthorized request'
+      opdata: 'Nanoleaf HTTP REST API at http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/[..] returns HTTP status code 401: Unauthorized'
+      url: 'http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/v1/_NANOLEAF_TOKEN_/'
+      priority: HIGH
+      description: 'Please check the NANOLEAF_TOKEN macro and create a new authorization token if necessary.'
+      manual_close: 'YES'
