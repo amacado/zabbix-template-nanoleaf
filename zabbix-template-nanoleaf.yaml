@@ -1,6 +1,6 @@
 zabbix_export:
   version: '6.0'
-  date: '2022-05-30T01:16:14Z'
+  date: '2022-05-31T23:01:34Z'
   groups:
     -
       uuid: 7df96b18c230490a9a0a9e2307226338
@@ -10,7 +10,10 @@ zabbix_export:
       uuid: 827f5eb45ee94a66895f1b523855d958
       template: Nanoleaf
       name: Nanoleaf
-      description: 'Nanoleaf is a company specializing in LED lighting.'
+      description: |
+        Nanoleaf is a company specializing in LED lighting. This template provides monitoring capabilities to watch for changes in hardware, layout and state.
+        
+        Visit github.com/amacado/zabbix-template-nanoleaf for more information.
       groups:
         -
           name: Templates
@@ -20,10 +23,10 @@ zabbix_export:
           name: 'Nanoleaf controller info'
           type: HTTP_AGENT
           key: controller.info
-          history: '0'
+          history: 1h
           trends: '0'
           value_type: TEXT
-          description: 'Raw (JSON) response of the controller info request. Result will be pre-processed by dependend items to extract the actual item values.'
+          description: 'Raw (JSON) response of the controller info request. Result will be pre-processed by dependend items to extract the actual item values.History can be used for debugging or to extend the items.'
           url: 'http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/v1/{$NANOLEAF_TOKEN}/'
         -
           uuid: 6022b6c17ca64cdbaf30d0c0a56d3024
@@ -176,6 +179,33 @@ zabbix_export:
               type: MULTIPLE
               manual_close: 'YES'
         -
+          uuid: 19653123183544f5aa920e41d92359b7
+          name: 'Number of panels'
+          type: DEPENDENT
+          key: controller.info.panelLayout.layout.numPanels
+          delay: '0'
+          trends: '0'
+          description: 'Total number of available and connected panels to the main controller'
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - $.panelLayout.layout.numPanels
+          master_item:
+            key: controller.info
+          triggers:
+            -
+              uuid: d26bd281a14e4c77a4fe76207ee51945
+              expression: change(/Nanoleaf/controller.info.panelLayout.layout.numPanels)>0
+              recovery_mode: NONE
+              name: 'Number of connected panels changed'
+              event_name: 'Number of connected panels changed to {ITEM.VALUE}'
+              opdata: 'Current number of panels: {ITEM.LASTVALUE}'
+              priority: WARNING
+              description: 'Number of panels has changed'
+              type: MULTIPLE
+              manual_close: 'YES'
+        -
           uuid: 4f2e4804ea4b410ba08263bf911001fd
           name: 'Rhythm active'
           type: DEPENDENT
@@ -183,7 +213,7 @@ zabbix_export:
           delay: '0'
           trends: '0'
           value_type: FLOAT
-          description: 'Check if rhythm is active. Will return value ''-1'' if rhythm module is not connected.'
+          description: 'Check if rhythm is active. Value is not available when Rhythm module is not connected.'
           valuemap:
             name: 'Rhythmen: True/False|Rhythem not connected mapping'
           preprocessing:
@@ -195,8 +225,8 @@ zabbix_export:
               type: BOOL_TO_DECIMAL
               parameters:
                 - ''
-              error_handler: CUSTOM_VALUE
-              error_handler_params: '-1'
+              error_handler: CUSTOM_ERROR
+              error_handler_params: 'Unable to determine state. Is Rhythm module connected?'
           master_item:
             key: controller.info
           tags:
@@ -211,7 +241,7 @@ zabbix_export:
           delay: '0'
           trends: '0'
           value_type: FLOAT
-          description: 'Check if rhythm aux is available. Will return value ''-1'' if rhythm module is not connected.'
+          description: 'Check if rhythm aux is available. Value is not available when Rhythm module is not connected.'
           valuemap:
             name: 'Rhythmen: True/False|Rhythem not connected mapping'
           preprocessing:
@@ -223,8 +253,8 @@ zabbix_export:
               type: BOOL_TO_DECIMAL
               parameters:
                 - ''
-              error_handler: CUSTOM_VALUE
-              error_handler_params: '-1'
+              error_handler: CUSTOM_ERROR
+              error_handler_params: 'Unable to determine aux availability. Is Rhythm module connected?'
           master_item:
             key: controller.info
           tags:
@@ -240,7 +270,7 @@ zabbix_export:
           trends: '0'
           description: 'Check if rhythm module is connected to the Nanoleaf controller'
           valuemap:
-            name: 'Rhythmen: True/False|Rhythem not connected mapping'
+            name: 'Rythmen: Connected/Disconnected'
           preprocessing:
             -
               type: JSONPATH
@@ -256,6 +286,18 @@ zabbix_export:
             -
               tag: component
               value: 'rhythm module'
+          triggers:
+            -
+              uuid: f7c8bda1e8bc4e35bb99924d7b97d6ed
+              expression: change(/Nanoleaf/controller.info.rhythm.connected)>0
+              recovery_mode: NONE
+              name: 'Rhythm module connected state changed'
+              event_name: 'Rhythm module was {ITEM.VALUE}'
+              opdata: 'Rhythm is currently: {ITEM.LASTVALUE}'
+              priority: WARNING
+              description: 'A Rhythm module has been connected or disconnected'
+              type: MULTIPLE
+              manual_close: 'YES'
         -
           uuid: c774a678a0054916b847da216e86b7ea
           name: 'Rhythm firmware version'
@@ -264,24 +306,36 @@ zabbix_export:
           delay: '0'
           trends: '0'
           value_type: CHAR
-          description: 'Rhythmen firmware version. Will return value ''-1'' if rhythm module is not connected.'
-          valuemap:
-            name: 'Rhythmen: -1 = Rhythmen not connected mapping'
+          description: 'Rhythmen firmware version. Value is not available when Rhythm module is not connected.'
           preprocessing:
             -
               type: JSONPATH
               parameters:
                 - $.rhythm.firmwareVersion
             -
-              type: JAVASCRIPT
+              type: MATCHES_REGEX
               parameters:
-                - 'return (!value || value.length === 0 ) ? -1 : value'
+                - .+
+              error_handler: CUSTOM_ERROR
+              error_handler_params: 'Unable to determine firmware version. Is Rhythm module connected?'
           master_item:
             key: controller.info
           tags:
             -
               tag: component
               value: 'rhythm module'
+          triggers:
+            -
+              uuid: 479f02fdcd5e489b9bb12cc7fe20c2ee
+              expression: 'last(/Nanoleaf/controller.info.rhythm.firmware)<>-1 and change(/Nanoleaf/controller.info.rhythm.firmware)>0'
+              recovery_mode: NONE
+              name: 'Rhythm firmware has changed'
+              event_name: 'Rhythm firmware version has changed to {ITEM.VALUE}'
+              opdata: 'Current firmware version: {ITEM.LASTVALUE}'
+              priority: INFO
+              description: 'Firmware version of Rhythem module has changed.'
+              type: MULTIPLE
+              manual_close: 'YES'
         -
           uuid: cfc0bd29025c4fd4b9d1ed7c55390d91
           name: 'Rhythm hardware version'
@@ -290,24 +344,36 @@ zabbix_export:
           delay: '0'
           trends: '0'
           value_type: CHAR
-          description: 'Rhythmen hardware version. Will return value ''-1'' if rhythm module is not connected.'
-          valuemap:
-            name: 'Rhythmen: -1 = Rhythmen not connected mapping'
+          description: 'Rhythmen hardware version. Value is not available when Rhythm module is not connected.'
           preprocessing:
             -
               type: JSONPATH
               parameters:
                 - $.rhythm.hardwareVersion
             -
-              type: JAVASCRIPT
+              type: MATCHES_REGEX
               parameters:
-                - 'return (!value || value.length === 0 ) ? -1 : value'
+                - .+
+              error_handler: CUSTOM_ERROR
+              error_handler_params: 'Unable to determine hardware version. Is Rhythm module connected?'
           master_item:
             key: controller.info
           tags:
             -
               tag: component
               value: 'rhythm module'
+          triggers:
+            -
+              uuid: 838cac2ae8d2485fa02c7c23760196d6
+              expression: 'last(/Nanoleaf/controller.info.rhythm.hardware)<>-1 and change(/Nanoleaf/controller.info.rhythm.hardware)>0'
+              recovery_mode: NONE
+              name: 'Rhythm hardware version has changed'
+              event_name: 'Rhythm hardware version has changed to {ITEM.VALUE}'
+              opdata: 'Current hardware version: {ITEM.LASTVALUE}'
+              priority: INFO
+              description: 'Hardware version of Rhythem module has changed.'
+              type: MULTIPLE
+              manual_close: 'YES'
         -
           uuid: d2d3dfc4d4944a5a91503bbba3552ecf
           name: 'Rhythm mode'
@@ -315,8 +381,7 @@ zabbix_export:
           key: controller.info.rhythm.mode
           delay: '0'
           trends: '0'
-          value_type: CHAR
-          description: 'Rhythmen mode. Will return value ''-1'' if rhythm module is not connected.'
+          description: 'Rhythmen mode. Value is not available when Rhythm module is not connected.'
           valuemap:
             name: 'Rhythmen modes mapping'
           preprocessing:
@@ -325,9 +390,11 @@ zabbix_export:
               parameters:
                 - $.rhythm.rhythmMode
             -
-              type: JAVASCRIPT
+              type: MATCHES_REGEX
               parameters:
-                - 'return (!value || value.length === 0 ) ? -1 : value'
+                - '[0-9]+'
+              error_handler: CUSTOM_ERROR
+              error_handler_params: 'Unable to determine mode. Is Rhythm module connected?'
           master_item:
             key: controller.info
           tags:
@@ -351,6 +418,17 @@ zabbix_export:
                 - $.serialNo
           master_item:
             key: controller.info
+          triggers:
+            -
+              uuid: 0f8b37cf56dd42b4afc12cf829ab3c34
+              expression: change(/Nanoleaf/controller.info.serial)>0
+              recovery_mode: NONE
+              name: 'Serial number has changed'
+              event_name: 'Serial number has changed to {ITEM.VALUE}'
+              priority: AVERAGE
+              description: 'Nanoleaf serial number has changed.'
+              type: MULTIPLE
+              manual_close: 'YES'
         -
           uuid: 0b5a846848104afcaf8f6db2cf228c60
           name: 'Maximum brightness'
@@ -433,6 +511,7 @@ zabbix_export:
         -
           uuid: 32ee0edd19b64f77a5cab49b92c457dd
           name: 'Nanoleaf REST API available'
+          attempts: '3'
           steps:
             -
               name: 'Nanoleaf REST API: Controller info'
@@ -441,7 +520,6 @@ zabbix_export:
       macros:
         -
           macro: '{$NANOLEAF_HOST}'
-          value: '{HOST.CONN}'
           description: 'Hostname/IP of Nanoleaf controller.'
         -
           macro: '{$NANOLEAF_PORT}'
@@ -463,13 +541,6 @@ zabbix_export:
               value: '1'
               newvalue: 'On'
         -
-          uuid: e49cff5cf5aa45d3af771e2ebefff93b
-          name: 'Rhythmen: -1 = Rhythmen not connected mapping'
-          mappings:
-            -
-              value: '-1'
-              newvalue: 'Rhythmen not connected'
-        -
           uuid: 24a3646a53464400afcac595dcfdb283
           name: 'Rhythmen: True/False|Rhythem not connected mapping'
           mappings:
@@ -487,25 +558,31 @@ zabbix_export:
           name: 'Rhythmen modes mapping'
           mappings:
             -
-              value: '-1'
-              newvalue: 'Rhythmen not connected'
-            -
               value: '0'
               newvalue: Microphone
             -
               value: '1'
               newvalue: 'Aux cable'
+        -
+          uuid: 1b74c06250f640409be536a75da2dc87
+          name: 'Rythmen: Connected/Disconnected'
+          mappings:
+            -
+              value: '0'
+              newvalue: Disconnected
+            -
+              value: '1'
+              newvalue: Connected
   triggers:
     -
       uuid: d6ae43d178be425d917a0604f178f78a
-      expression: 'last(/Nanoleaf/web.test.fail[Nanoleaf REST API available])<>0'
+      expression: 'min(/Nanoleaf/web.test.fail[Nanoleaf REST API available],#3)<>0'
       recovery_mode: RECOVERY_EXPRESSION
       recovery_expression: 'last(/Nanoleaf/web.test.fail[Nanoleaf REST API available])=0'
       name: 'Nanoleaf REST API is unavailable'
-      opdata: 'Nanoleaf HTTP REST API at http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/[..] is not available'
-      url: 'http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/v1/{$NANOLEAF_TOKEN}/'
+      url: 'http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/v1/_NANOLEAF_TOKEN_/'
       priority: HIGH
-      description: 'Please check the NANOLEAF_HOST, NANOLEAF_PORT and NANOLEAF_TOKEN macros and create a new authorization token if necessary.'
+      description: 'The last 3 attempts to contact the Nanoleaf REST API have failed. Please check the NANOLEAF_HOST, NANOLEAF_PORT and NANOLEAF_TOKEN macros and create a new authorization token if necessary.'
       manual_close: 'YES'
     -
       uuid: 61a56e227f1c44098128b16a911cd795
@@ -513,7 +590,6 @@ zabbix_export:
       recovery_mode: RECOVERY_EXPRESSION
       recovery_expression: 'last(/Nanoleaf/web.test.rspcode[Nanoleaf REST API available,Nanoleaf REST API: Controller info])=200'
       name: 'Nanoleaf REST API reports unauthorized request'
-      opdata: 'Nanoleaf HTTP REST API at http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/[..] returns HTTP status code 401: Unauthorized'
       url: 'http://{$NANOLEAF_HOST}:{$NANOLEAF_PORT}/api/v1/_NANOLEAF_TOKEN_/'
       priority: HIGH
       description: 'Please check the NANOLEAF_TOKEN macro and create a new authorization token if necessary.'
