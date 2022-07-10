@@ -1,6 +1,6 @@
 zabbix_export:
   version: '6.0'
-  date: '2022-05-31T23:01:34Z'
+  date: '2022-07-10T09:51:18Z'
   groups:
     -
       uuid: 7df96b18c230490a9a0a9e2307226338
@@ -196,7 +196,7 @@ zabbix_export:
           triggers:
             -
               uuid: d26bd281a14e4c77a4fe76207ee51945
-              expression: change(/Nanoleaf/controller.info.panelLayout.layout.numPanels)>0
+              expression: change(/Nanoleaf/controller.info.panelLayout.layout.numPanels)<>0
               recovery_mode: NONE
               name: 'Number of connected panels changed'
               event_name: 'Number of connected panels changed to {ITEM.VALUE}'
